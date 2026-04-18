@@ -2,6 +2,11 @@ plugins {
     id 'java'
 }
 
+java {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+
 group = 'org.example'
 version = '1.0-SNAPSHOT'
 
@@ -10,11 +15,28 @@ repositories {
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'org.postgresql:postgresql:42.7.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'VideoStatsAggregator'
+    }
+    from {
+        configurations.runtimeClasspath.collect { 
+            it.isDirectory() ? it : zipTree(it) 
+        }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+task run(type: JavaExec) {
+    main = 'VideoStatsAggregator'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
 test {
-    useJUnitPlatform()
+    useJUnit()
 }
