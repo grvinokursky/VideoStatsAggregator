@@ -22,7 +22,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'VideoStatsAggregator'
+        attributes 'Main-Class': 'videostats.VideoStatsAggregator'
     }
     from {
         configurations.runtimeClasspath.collect { 
@@ -33,7 +33,7 @@ jar {
 }
 
 task run(type: JavaExec) {
-    main = 'VideoStatsAggregator'
+    main = 'videostats.VideoStatsAggregator'
     classpath = sourceSets.main.runtimeClasspath
 }
 
