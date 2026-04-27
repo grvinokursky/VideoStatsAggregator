@@ -1,10 +1,10 @@
 package videostats.repository;
 
+import videostats.model.Video;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-
-import videostats.model.Video;
 
 public class VideoRepository {
     private final DatabaseConnection db;
@@ -13,6 +13,9 @@ public class VideoRepository {
         this.db = db;
     }
 
+    // По возможности написать текст исключений на русском в расчете на отображение пользователю.
+    // По возможности выделить случай, когда видео дублируется (например, совпадает url), чтобы бросать осмысленное исключение.
+    // Или же можно здесь (в репозитории) реализовать отдельный метод для проверки на наличие дублей.
     public void save(Video video) {
         String sql = """
             INSERT INTO videos (url, video_id, platform, user_id)
@@ -43,6 +46,7 @@ public class VideoRepository {
         }
     }
 
+    // Кажется метод не нужен.
     public List<Video> findAll() {
         String sql = """
             SELECT url, video_id, platform, user_id
@@ -70,6 +74,11 @@ public class VideoRepository {
         }
         
         return videos;
+    }
+
+    // Требуется реализовать.
+    public List<Video> findByUserId(long userId) {
+        return new ArrayList<>();
     }
 
     private Video mapRowToVideo(ResultSet rs) throws SQLException {

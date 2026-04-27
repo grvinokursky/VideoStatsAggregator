@@ -1,37 +1,76 @@
 package videostats;
 
-import java.sql.*;
-import java.util.Scanner;
-import java.util.List;
-
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
+import videostats.application.TelegramBot;
 import videostats.model.Video;
 import videostats.repository.DatabaseConnection;
 import videostats.repository.VideoRepository;
+import videostats.repository.VideoStatsRepository;
+import videostats.services.telegram.TelegramBotService;
+import videostats.services.video.VideoService;
+import videostats.services.youtube.YoutubeService;
+
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
 public class VideoStatsAggregator {
-    private static DatabaseConnection db;
-
     public static void main(String[] args) {
-        String url = System.getenv("POSTGRES_URL");
-        String user = System.getenv("POSTGRES_USER");
-        String password = System.getenv("POSTGRES_PASSWORD");
-
-        db = DatabaseConnection.getInstance(url, user, password);
-        VideoRepository repository = new VideoRepository(db);
-        
         try {
-            createTable();
-            Video video = new Video("https://youtube.com/akula", "akula", "youtube.com", 1);
-            repository.save(video);
-            video = new Video("https://vkvideo.ru/show", "show", "vkvideo.ru", 2);
-            repository.save(video);
-            getAllVideos(repository);
-        } catch (SQLException e) {
-            System.err.println("Error: " + e.getMessage());
+            setOutEncoding();
+
+            System.out.println("Старт конфигурирования приложения...");
+
+            var postgresUrl = System.getenv("POSTGRES_URL");
+            var postgresUser = System.getenv("POSTGRES_USER");
+            var postgresPassword = System.getenv("POSTGRES_PASSWORD");
+            var telegramBotToken = System.getenv("TELEGRAM_BOT_TOKEN");
+
+            var databaseConnection = DatabaseConnection.getInstance(postgresUrl, postgresUser, postgresPassword);
+
+            var telegramClient = new OkHttpTelegramClient(telegramBotToken);
+            var telegramBotService = new TelegramBotService(telegramClient);
+
+            var videoRepository = new VideoRepository(databaseConnection);
+            var videoStatsRepository = new VideoStatsRepository(databaseConnection);
+            var youtubeService = new YoutubeService();
+            var videoService = new VideoService(videoRepository, videoStatsRepository, youtubeService);
+
+            var telegramBot = new TelegramBot(telegramBotService, videoService);
+
+            System.out.println("Конфигурирование приложения успешно завершено.");
+
+            System.out.println("Запуск телеграм-бота...");
+
+            var botsApplication = new TelegramBotsLongPollingApplication();
+            botsApplication.registerBot(telegramBotToken, telegramBot);
+
+            System.out.println("Телеграм-бот успешно запущен.");
+        } catch (Exception e) {
+            System.out.printf("Возникла непредвиденная ошибка. %s", e.getMessage());
         }
+
+//        try {
+//            createTable();
+//            Video video = new Video("https://youtube.com/akula", "akula", "youtube.com", 1);
+//            repository.save(video);
+//            video = new Video("https://vkvideo.ru/show", "show", "vkvideo.ru", 2);
+//            repository.save(video);
+//            getAllVideos(repository);
+//        } catch (SQLException e) {
+//            System.err.println("Error: " + e.getMessage());
+//        }
     }
-    
-    private static void createTable() throws SQLException {
+
+    private static void setOutEncoding() {
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+    }
+
+    private static void createTable(DatabaseConnection databaseConnection) throws SQLException {
         String sql = """
             CREATE TABLE IF NOT EXISTS videos (
                 id SERIAL PRIMARY KEY,
@@ -41,12 +80,12 @@ public class VideoStatsAggregator {
                 user_id BIGINT NOT NULL
             )
         """;
-        Connection conn = db.getConnection();
+        Connection conn = databaseConnection.getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
         }
         finally {
-            db.releaseConnection(conn);
+            databaseConnection.releaseConnection(conn);
         }
     }
     
