@@ -29,6 +29,7 @@ public class VideoStatsAggregator {
             var postgresUser = System.getenv("POSTGRES_USER");
             var postgresPassword = System.getenv("POSTGRES_PASSWORD");
             var telegramBotToken = System.getenv("TELEGRAM_BOT_TOKEN");
+            var youtubeApiKey = System.getenv("YOUTUBE_API_KEY");
 
             var databaseConnection = DatabaseConnection.getInstance(postgresUrl, postgresUser, postgresPassword);
 
@@ -37,7 +38,7 @@ public class VideoStatsAggregator {
 
             var videoRepository = new VideoRepository(databaseConnection);
             var videoStatsRepository = new VideoStatsRepository(databaseConnection);
-            var youtubeService = new YoutubeService();
+            var youtubeService = new YoutubeService(youtubeApiKey);
             var videoService = new VideoService(videoRepository, videoStatsRepository, youtubeService);
 
             var telegramBot = new TelegramBot(telegramBotService, videoService);
