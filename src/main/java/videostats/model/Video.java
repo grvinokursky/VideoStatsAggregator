@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 
 public class Video {
     private String url;
-    private String videoID;
+    private String videoId;
     private String platform;
-    private long userID;
+    private long userId;
 
     // Нужно включать этот объект в модель для удобства работы в сервисе.
     // Или можно перенести свойства 'VideoStats' в данный класс.
@@ -15,11 +15,13 @@ public class Video {
 
     public Video() { }
 
-    public Video(String url, String videoID, String platform, long userID, Long viewsCount, LocalDateTime updateAt) {
+    public Video(String url, String videoId, String platform,
+                 long userId, Long viewsCount, LocalDateTime updateAt) {
         this.url = url;
-        this.videoID = videoID;
+        this.videoId = videoId;
         this.platform = platform;
-        this.userID = userID;
+        this.userId = userId;
+        this.videoStats = new VideoStats(videoId, viewsCount, updateAt);
     }
 
     public String getUrl() {
@@ -30,12 +32,12 @@ public class Video {
         this.url = url;
     }
 
-    public String getVideoID() {
-        return videoID;
+    public String getVideoId() {
+        return videoId;
     }
 
-    public void setVideoID(String videoID) {
-        this.videoID = videoID;
+    public void setVideoId(String videoId) {
+        this.videoId = videoId;
     }
 
     public String getPlatform() {
@@ -46,12 +48,12 @@ public class Video {
         this.platform = platform;
     }
 
-    public long getUserID() {
-        return userID;
+    public long getUserId() {
+        return userId;
     }
 
-    public void setUserID(long userID) {
-        this.userID = userID;
+    public void setUserId(long userId) {
+        this.userId = userId;
     }
 
     public VideoStats getVideoStats() {

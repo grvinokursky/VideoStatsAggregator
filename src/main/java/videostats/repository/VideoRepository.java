@@ -34,9 +34,9 @@ public class VideoRepository {
             conn = db.getConnection();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, video.getUrl());
-            pstmt.setString(2, video.getVideoID());
+            pstmt.setString(2, video.getVideoId());
             pstmt.setString(3, video.getPlatform());
-            pstmt.setLong(4, video.getUserID());
+            pstmt.setLong(4, video.getUserId());
             
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -82,11 +82,11 @@ public class VideoRepository {
     }
 
     private Video mapRowToVideo(ResultSet rs) throws SQLException {
-        Video video = new Video();
+        var video = new Video();
         video.setUrl(rs.getString("url"));
-        video.setVideoID(rs.getString("video_id"));
+        video.setVideoId(rs.getString("video_id"));
         video.setPlatform(rs.getString("platform"));
-        video.setUserID(rs.getLong("user_id"));
+        video.setUserId(rs.getLong("user_id"));
         return video;
     }
 

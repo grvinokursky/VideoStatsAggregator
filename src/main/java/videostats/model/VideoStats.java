@@ -3,24 +3,24 @@ package videostats.model;
 import java.time.LocalDateTime;
 
 public class VideoStats {
-    private String videoID;
+    private String videoId;
     private long viewCount;
     private LocalDateTime updatedAt;
 
     public VideoStats() { }
 
-    public VideoStats(String videoID, long viewCount, LocalDateTime updatedAt) {
-        this.videoID = videoID;
+    public VideoStats(String videoId, long viewCount, LocalDateTime updatedAt) {
+        this.videoId = videoId;
         this.viewCount = viewCount;
         this.updatedAt = updatedAt;
     }
 
-    public String getVideoID() {
-        return videoID;
+    public String getVideoId() {
+        return videoId;
     }
 
-    public void setVideoID(String VideoID) {
-        this.videoID = videoID;
+    public void setVideoId(String videoId) {
+        this.videoId = videoId;
     }
 
     public long getViewCount() {

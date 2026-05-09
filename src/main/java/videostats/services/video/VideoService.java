@@ -36,7 +36,7 @@ public class VideoService {
 
         videoRepository.save(new Video(
                 videoUrl,
-                videoStatistics.getVideoID(),
+                videoStatistics.getVideoId(),
                 platform,
                 userId,
                 videoStatistics.getViewCount(),
@@ -76,7 +76,7 @@ public class VideoService {
             var videoStats = getVideoStatistics(
                     video.getUrl(),
                     video.getPlatform(),
-                    video.getUserID());
+                    video.getUserId());
 
             videoStatsRepository.save(videoStats);
         }

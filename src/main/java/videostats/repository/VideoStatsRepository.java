@@ -28,7 +28,7 @@ public class VideoStatsRepository {
         try {
             conn = db.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, videoStats.getVideoID());
+            pstmt.setString(1, videoStats.getVideoId());
             pstmt.setLong(2, videoStats.getViewCount());
             
             pstmt.executeUpdate();
@@ -70,7 +70,7 @@ public class VideoStatsRepository {
 
     private VideoStats mapRowToVideoStats(ResultSet rs) throws SQLException {
         VideoStats videoStats = new VideoStats();
-        videoStats.setVideoID(rs.getString("video_id"));
+        videoStats.setVideoId(rs.getString("video_id"));
         videoStats.setViewCount(rs.getLong("view_count"));
         return videoStats;
     }

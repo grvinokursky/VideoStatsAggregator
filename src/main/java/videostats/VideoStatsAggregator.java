@@ -92,13 +92,13 @@ public class VideoStatsAggregator {
     
     private static void getAllVideos(VideoRepository repository) throws SQLException {
         List<Video> videos = repository.findAll();
-        System.out.printf("%-3s | %-30s | %-20s | %-7s%n", "Url", "Video ID", "Platform", "User ID");            
+        System.out.printf("%-3s | %-30s | %-20s | %-7s%n", "Url", "Video Id", "Platform", "User Id");            
         for (Video video : videos) {
             System.out.printf("%-30s | %-30s | %-20s | %-7s%n", 
                 video.getUrl(), 
-                video.getVideoID(), 
+                video.getVideoId(), 
                 video.getPlatform(), 
-                video.getUserID()
+                video.getUserId()
             );
         }
     }
