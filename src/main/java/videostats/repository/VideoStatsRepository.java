@@ -1,87 +1,111 @@
 package videostats.repository;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.query.MutationQuery;
+import org.hibernate.query.SelectionQuery;
 import videostats.model.VideoStats;
 
-public class VideoStatsRepository {
-    private final DatabaseConnection db;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
-    public VideoStatsRepository(DatabaseConnection db) {
-        this.db = db;
+public class VideoStatsRepository {
+
+    private final SessionFactory sessionFactory;
+
+    public VideoStatsRepository(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     public void save(VideoStats videoStats) {
-        String sql = """
-            INSERT INTO video_stats (video_id, view_count)
-            VALUES (?, ?)
-            ON CONFLICT (video_id) DO UPDATE SET
-                view_count = EXCLUDED.view_count,
-        """;
-        
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = db.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, videoStats.getVideoId());
-            pstmt.setLong(2, videoStats.getViewCount());
-            
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to save video stats", e);
-        } finally {
-            closeResources(rs, pstmt, conn);
+        Transaction tx = null;
+        try (Session session = sessionFactory.openSession()) {
+            tx = session.beginTransaction();
+
+            if (videoStats.getUpdatedAt() == null) {
+                videoStats.setUpdatedAt(LocalDateTime.now());
+            }
+
+            VideoStats existing = findByPlatformAndVideoId(
+                session, 
+                videoStats.getPlatform(), 
+                videoStats.getVideoId()
+            );
+
+            if (existing != null) {
+                existing.setViewCount(videoStats.getViewCount());
+                existing.setUpdatedAt(LocalDateTime.now());
+                session.merge(existing);
+            } else {
+                session.persist(videoStats);
+            }
+
+            tx.commit();
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            throw new RuntimeException("Ошибка сохранения статистики видео: " + e.getMessage(), e);
         }
     }
 
     public List<VideoStats> findAll() {
-        String sql = """
-            SELECT video_id, view_count
-            FROM video_stats
-        """;
-        
-        List<VideoStats> videoStatsList = new ArrayList<>();
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        
-        try {
-            conn = db.getConnection();
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(sql);
-            
-            while (rs.next()) {
-                VideoStats videoStats = mapRowToVideoStats(rs);
-                videoStatsList.add(videoStats);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to fetch all video links", e);
-        } finally {
-            closeResources(rs, stmt, conn);
+        try (Session session = sessionFactory.openSession()) {
+            SelectionQuery<VideoStats> query = session.createSelectionQuery(
+                "SELECT vs FROM VideoStats vs", VideoStats.class
+            );
+            return query.getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка получения всех записей статистики", e);
         }
-        
-        return videoStatsList;
     }
 
-    private VideoStats mapRowToVideoStats(ResultSet rs) throws SQLException {
-        VideoStats videoStats = new VideoStats();
-        videoStats.setVideoId(rs.getString("video_id"));
-        videoStats.setViewCount(rs.getLong("view_count"));
-        return videoStats;
+    public Optional<VideoStats> findByPlatformAndVideoId(String platform, String videoId) {
+        try (Session session = sessionFactory.openSession()) {
+            return Optional.ofNullable(findByPlatformAndVideoId(session, platform, videoId));
+        } catch (Exception e) {
+            throw new RuntimeException(
+                String.format("Ошибка поиска статистики для platform=%s, videoId=%s", platform, videoId), 
+                e
+            );
+        }
     }
 
-    private void closeResources(ResultSet rs, Statement stmt, Connection conn) {
-        try {
-            if (rs != null) rs.close();
-            if (stmt != null) stmt.close();
-            if (conn != null) db.releaseConnection(conn);
-        } catch (SQLException e) {
-            System.err.println("Error closing resources: " + e.getMessage());
+    public int updateViewCount(String platform, String videoId, long newViewCount) {
+        Transaction tx = null;
+        try (Session session = sessionFactory.openSession()) {
+            tx = session.beginTransaction();
+
+            MutationQuery query = session.createMutationQuery(
+                "UPDATE VideoStats vs SET vs.viewCount = :viewCount, vs.updatedAt = :updatedAt " +
+                "WHERE vs.platform = :platform AND vs.videoId = :videoId"
+            );
+            query.setParameter("viewCount", newViewCount);
+            query.setParameter("updatedAt", LocalDateTime.now());
+            query.setParameter("platform", platform);
+            query.setParameter("videoId", videoId);
+            int updatedCount = query.executeUpdate();
+
+            tx.commit();
+            return updatedCount;
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            throw new RuntimeException(
+                String.format("Ошибка обновления просмотров для platform=%s, videoId=%s", platform, videoId), 
+                e
+            );
         }
+    }
+
+    private VideoStats findByPlatformAndVideoId(Session session, String platform, String videoId) {
+        SelectionQuery<VideoStats> query = session.createSelectionQuery(
+            "SELECT vs FROM VideoStats vs WHERE vs.platform = :platform AND vs.videoId = :videoId",
+            VideoStats.class
+        );
+        query.setParameter("platform", platform);
+        query.setParameter("videoId", videoId);
+        return query.uniqueResult();
     }
 }

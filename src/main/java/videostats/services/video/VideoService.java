@@ -4,6 +4,7 @@ import videostats.model.Video;
 import videostats.model.VideoStats;
 import videostats.repository.VideoRepository;
 import videostats.repository.VideoStatsRepository;
+import videostats.services.parsers.ParserFactory;
 import videostats.services.video.Models.AggregatedVideoStatisticsInfo;
 import videostats.services.video.Models.VideoStatisticInfo;
 import videostats.services.youtube.YoutubeService;
@@ -16,35 +17,39 @@ public class VideoService {
     private VideoRepository videoRepository;
     private VideoStatsRepository videoStatsRepository;
     private YoutubeService youtubeService;
+    private ParserFactory parserFactory;
 
     public VideoService(
             VideoRepository videoRepository,
             VideoStatsRepository videoStatsRepository,
-            YoutubeService youtubeService) {
+            YoutubeService youtubeService,
+            ParserFactory parserFactory) {
         this.videoRepository = videoRepository;
         this.videoStatsRepository = videoStatsRepository;
         this.youtubeService = youtubeService;
+        this.parserFactory = parserFactory;
     }
 
     public void TrackVideo(long userId, String videoUrl) {
-        var platform = getPlatform(videoUrl);
+        var parsedUrl = parserFactory.parse(videoUrl);
 
         var videoStatistics = getVideoStatistics(
-                videoUrl,
-                platform,
-                userId);
+                parsedUrl.getVideoId(),
+                parsedUrl.getPlatform());
+        
+        videoStatsRepository.save(videoStatistics);
 
         videoRepository.save(new Video(
                 videoUrl,
-                videoStatistics.getVideoId(),
-                platform,
+                parsedUrl.getVideoId(),
+                parsedUrl.getPlatform(),
                 userId,
-                videoStatistics.getViewCount(),
-                LocalDateTime.now()));
+                videoStatistics
+        ));
     }
 
     public List<VideoStatisticInfo> GetStatisticsForVideos(long userId) {
-        var videos = videoRepository.findByUserId(userId);
+        var videos = videoRepository.findByUserId(userId, videoStatsRepository);
 
         return videos
                 .stream()
@@ -57,7 +62,7 @@ public class VideoService {
     }
 
     public AggregatedVideoStatisticsInfo GetAggregatedVideoStatisticsInfo(long userId) {
-        var videos = videoRepository.findByUserId(userId);
+        var videos = videoRepository.findByUserId(userId, videoStatsRepository);
 
         var videosViewsCount = BigInteger.ZERO;
         for (Video video : videos) {
@@ -70,37 +75,32 @@ public class VideoService {
     }
 
     public void RefreshVideosStatistics(long userId) {
-        var videos = videoRepository.findByUserId(userId);
+        var videos = videoRepository.findByUserId(userId, videoStatsRepository);
 
         for (Video video : videos) {
             var videoStats = getVideoStatistics(
-                    video.getUrl(),
-                    video.getPlatform(),
-                    video.getUserId());
-
+                    video.getVideoId(),
+                    video.getPlatform()
+            );
             videoStatsRepository.save(videoStats);
         }
     }
 
-    private VideoStats getVideoStatistics(String url, String platform, long userId) {
+    private VideoStats getVideoStatistics(String videoId, String platform) {
         switch (platform) {
             case "youtube":
-                var youtubeVideoViewsCountResponse = youtubeService.GetVideoViewsCount(url);
+                var youtubeVideoViewsCountResponse = youtubeService.GetVideoViewsCount(videoId);
+                if (youtubeVideoViewsCountResponse.isEmpty()) {
+                    return videoStatsRepository.findByPlatformAndVideoId(platform, videoId).get();
+                }
 
                 return new VideoStats(
-                        youtubeVideoViewsCountResponse.getVideoId(),
-                        youtubeVideoViewsCountResponse.getViewsCount(),
+                        youtubeVideoViewsCountResponse.get().getVideoId(),
+                        platform,
+                        youtubeVideoViewsCountResponse.get().getViewsCount(),
                         LocalDateTime.now());
             default:
                 throw new RuntimeException(String.format("Платформа '%s' не поддерживается.", platform));
-        }
-    }
-
-    private String getPlatform(String videoUrl) {
-        if (videoUrl.startsWith("https://www.youtube.com")) {
-            return "youtube";
-        } else {
-            throw new RuntimeException("Не поддерживается источник видео");
         }
     }
 }

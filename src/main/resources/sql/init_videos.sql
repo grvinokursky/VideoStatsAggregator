@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS videos (
+    id SERIAL PRIMARY KEY,
+    url VARCHAR(100) NOT NULL UNIQUE,
+    video_id VARCHAR(100) NOT NULL,
+    platform VARCHAR(100) NOT NULL,
+    user_id BIGINT NOT NULL
+);

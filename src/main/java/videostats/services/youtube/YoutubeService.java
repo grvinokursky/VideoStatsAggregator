@@ -1,12 +1,13 @@
 package videostats.services.youtube;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
 
 import java.util.Collections;
+import java.util.Optional;
 
 
 public class YoutubeService {
@@ -15,12 +16,12 @@ public class YoutubeService {
     public YoutubeService(String apiKey) {
         this.apiKey = apiKey;
     }
-    // Заглушка.
-    public YoutubeVideoViewsCountResponse GetVideoViewsCount(String videoId) {
+
+    public Optional<YoutubeVideoViewsCountResponse> GetVideoViewsCount(String videoId) {
         try {
             YouTube youtube = new YouTube.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
-                JacksonFactory.getDefaultInstance(),
+                GsonFactory.getDefaultInstance(),
                 request -> request.getUrl().set("key", apiKey)
             ).setApplicationName("VideoStatsAggregator").build();
             
@@ -33,12 +34,11 @@ public class YoutubeService {
             if (!response.getItems().isEmpty()) {
                 Video video = response.getItems().get(0);
                 long views = video.getStatistics().getViewCount().longValue();
-                System.out.println("Просмотров: " + views);
-                return new YoutubeVideoViewsCountResponse(views, videoId);
+                return Optional.of(new YoutubeVideoViewsCountResponse(views, videoId));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return Optional.empty();
     }
 }

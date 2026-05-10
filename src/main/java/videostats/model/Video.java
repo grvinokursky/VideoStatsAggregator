@@ -2,26 +2,48 @@ package videostats.model;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "videos")
 public class Video {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
     private String url;
+
+    @Column(name = "video_id")
     private String videoId;
+
+    @Column(name = "platform")
     private String platform;
+
+    @Column(name = "user_id")
     private long userId;
 
-    // Нужно включать этот объект в модель для удобства работы в сервисе.
-    // Или можно перенести свойства 'VideoStats' в данный класс.
-    // Сейчас реализовано для первого варианта, так что мне было бы удобнее остановится на первом варианте.
+    @Transient
     private VideoStats videoStats;
 
     public Video() { }
 
     public Video(String url, String videoId, String platform,
-                 long userId, Long viewsCount, LocalDateTime updateAt) {
+                 long userId, VideoStats videoStats) {
         this.url = url;
         this.videoId = videoId;
         this.platform = platform;
         this.userId = userId;
-        this.videoStats = new VideoStats(videoId, viewsCount, updateAt);
+        this.videoStats = videoStats;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getUrl() {
