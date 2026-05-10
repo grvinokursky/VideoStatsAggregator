@@ -42,6 +42,8 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
     private void handlerTrackCommand(Long chatId, String videoUrl) {
         try {
             videoService.TrackVideo(chatId, videoUrl);
+
+            telegramBotService.SendMessage(chatId, "Ссылка успешно отслеживается");
         } catch (Exception e) {
             telegramBotService.SendMessage(chatId, e.getMessage());
         }
