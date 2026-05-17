@@ -49,7 +49,7 @@ VideoStatsAggregator позволяет получать актуальную с
 
 Для начала клонируйте репозиторий на вашу машину:
 ```
-git clone https://github.com/your-username/VideoStatsAggregator.git
+git clone git@github.com:grvinokursky/VideoStatsAggregator.git
 cd VideoStatsAggregator
 ```
 
